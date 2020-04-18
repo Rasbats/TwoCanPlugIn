@@ -33,7 +33,11 @@
 // Constants, typedefs and utility functions for bit twiddling and array manipulation for NMEA 2000 messages
 #include "twocanutils.h"
 
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
+#include "twocanlogreader.h"
+#endif
+
+#if defined (__LINUX__)
 // For Linux , "baked in" classes for the Log File reader and SocketCAN interface
 #include "twocanlogreader.h"
 #include "twocansocket.h"
@@ -66,7 +70,7 @@
 // User's paths/documents folder
 #include <wx/stdpaths.h>
 
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
 	// redefine Windows safe snprintf function to an equivalent
 	#define _snprintf_s(a,b,c,...) snprintf(a,b,__VA_ARGS__)
 #endif
@@ -91,7 +95,7 @@ extern const wxEventType wxEVT_SENTENCE_RECEIVED_EVENT;
 #define CONST_LOGFILE_NAME L"twocan.log"
 #endif
 
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
 #define CONST_LOGFILE_NAME _T("twocan.log")
 #endif
 
@@ -158,7 +162,12 @@ public:
 
 	// Reference to event handler address, ie. the TwoCan PlugIn
 	wxEvtHandler *eventHandlerAddress;
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
+        // wxMessage Queue to receive CAN Frames from either the Linux LogFile Reader or SocketCAN interface
+        wxMessageQueue<std::vector<byte>> *canQueue;
+    #endif
+
+#if defined (__LINUX__)
 	// wxMessage Queue to receive CAN Frames from either the Linux LogFile Reader or SocketCAN interface
 	wxMessageQueue<std::vector<byte>> *canQueue;
 #endif
@@ -189,7 +198,14 @@ private:
 	LPFNDLLWrite writeFrame = NULL;
 #endif
 
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
+        // BUG BUG implement these as derived classes from an abstract class ??
+        TwoCanLogReader *linuxLogReader;        
+        // Need to persist the name of the Linux Driver, either "Log File Reader" or can0/slcan0/vcan0
+        wxString linuxDriverName;
+#endif
+    
+#if defined (__LINUX__)
 	// BUG BUG implement these as derived classes from an abstract class ??
 	TwoCanLogReader *linuxLogReader; 
 	TwoCanSocket *linuxSocket;
@@ -204,7 +220,7 @@ private:
 	int UnloadWindowsDriver(void);
 #endif
 
-#ifdef __LINUX__	
+#if defined (__APPLE__) && defined (__MACH__)
 	// Functions to control the Linux CAN interface
 	int ReadLinuxDriver(void);
 #endif

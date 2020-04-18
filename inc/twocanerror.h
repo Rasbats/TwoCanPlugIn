@@ -43,7 +43,7 @@ void DebugPrintf(wchar_t *fmt, ...);
 	// Routine to retrieve human readable win32 error message
 	char *GetErrorMessage(int win32ErrorCode);
 #endif
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
 	// Routine to retrieve human readable Linux error message
 	char *GetErrorMessage(int linuxErrorCode);
 #endif

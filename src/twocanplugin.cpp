@@ -200,6 +200,7 @@ void TwoCan::OnSentenceReceived(wxCommandEvent &event) {
 // Display TwoCan preferences dialog
 void TwoCan::ShowPreferencesDialog(wxWindow* parent) {
 	settingsDialog = new TwoCanSettings(parent);
+   
 
 	if (settingsDialog->ShowModal() == wxID_OK) {
 

@@ -46,12 +46,20 @@
 TwoCanDevice::TwoCanDevice(wxEvtHandler *handler) : wxThread(wxTHREAD_DETACHED) {
 	// Save a reference to our "parent", the plugin event handler so we can pass events to it
 	eventHandlerAddress = handler;
-	
-#ifdef __LINUX__
+    
+#if defined (__APPLE__) && defined (__MACH__)
+    canQueue = new wxMessageQueue<std::vector<byte>>();
+#endif
+
+#if defined (__LINUX_)
 	// initialise Message Queue to receive frames from either the Log reader or SockeTCAN interface
 	canQueue = new wxMessageQueue<std::vector<byte>>();
 #endif
-	
+
+    #if defined (__LINUX_)
+        // initialise Message Queue to receive frames from either the Log reader or SockeTCAN interface
+        canQueue = new wxMessageQueue<std::vector<byte>>();
+    #endif
 	// FastMessage buffer is used to assemble the multiple frames of a fast message
 	MapInitialize();
 	
@@ -188,7 +196,7 @@ void TwoCanDevice::OnHeartbeat(wxEvent &event) {
 // Init, Load the CAN Adapter (either a Windows DLL or for Linux the baked-in drivers; Log File Reader or SocketCAN
 // and get ready to start reading from the CAN bus.
 int TwoCanDevice::Init(wxString driverPath) {
-	int returnCode;
+	int returnCode = 0;
 	
 #ifdef  __WXMSW__ 
 	// Load the CAN Adapter DLL
@@ -229,7 +237,20 @@ int TwoCanDevice::Init(wxString driverPath) {
 	}
 #endif
 
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
+    // For Linux, using "baked in" classes instead of the plug-in model that the Window's version uses
+    // Save the driver name to pass to the Open, Close, Read functions
+    linuxDriverName = driverPath;
+    // Determine whether using logfile reader or CAN hardware interface
+    //if (DriverName.CmpNoCase("Log File Reader") == 0) {
+        // Load the logfile reader
+        linuxLogReader = new TwoCanLogReader(canQueue);
+        returnCode = linuxLogReader->Open(CONST_LOGFILE_NAME);
+        //wxMessageBox(wxString::Format("%i", returnCode));
+    //}
+#endif
+
+#if defined (__LINUX__)
 	// For Linux, using "baked in" classes instead of the plug-in model that the Window's version uses
 	// Save the driver name to pass to the Open, Close, Read functions
 	linuxDriverName = driverPath;
@@ -287,9 +308,8 @@ int TwoCanDevice::Init(wxString driverPath) {
 	
 #endif
 
-	return returnCode;
+    return returnCode;
 }
-
 // DeInit
 // BUG BUG should we move unloading the Windows DLL to this function ??
 // BUG BUG At present DeInit is not called by the TwoCanPlugin
@@ -305,9 +325,10 @@ wxThread::ExitCode TwoCanDevice::Entry() {
 	return (wxThread::ExitCode)ReadWindowsDriver();
 #endif
 
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
 	return (wxThread::ExitCode)ReadLinuxDriver();
 #endif
+    return 0;
 }
 
 // OnExit, called when thread->delete is invoked, and entry returns
@@ -329,7 +350,7 @@ void TwoCanDevice::OnExit() {
 	returnCode = UnloadWindowsDriver();
 #endif
 
-#ifdef __LINUX__
+#if defined (__LINUX__)
 	wxThread::ExitCode threadExitCode;
 	if (linuxDriverName.CmpNoCase("Log File Reader") == 0) {
 		returnCode = linuxLogReader->Delete(&threadExitCode,wxTHREAD_WAIT_BLOCK);
@@ -355,7 +376,8 @@ void TwoCanDevice::OnExit() {
 	}
 }
 
-#ifdef __LINUX__
+
+#if defined (__APPLE__) && (__MACH__)
 int TwoCanDevice::ReadLinuxDriver(void) {
 	CanHeader header;
 	byte payload[CONST_PAYLOAD_LENGTH];
@@ -366,9 +388,7 @@ int TwoCanDevice::ReadLinuxDriver(void) {
 	if (linuxDriverName.CmpNoCase("Log File Reader") == 0) {
 		linuxLogReader->Run();
 	}
-	else {
-		linuxSocket->Run();
-	}
+	
 	
 	while (!TestDestroy())	{
 		
@@ -917,7 +937,7 @@ void TwoCanDevice::LogReceivedFrames(const CanHeader *header, const byte *frame)
 	// Candump format (1542794024.886119) can0 09F50303#030000FFFF00FFFF (use candump -l canx where x is 0,1 etc.)
 	if (logLevel == FLAGS_LOG_CANDUMP) {
 		if (rawLogFile.IsOpened()) {
-#ifdef __LINUX__
+#if defined (__LINUX__)
 			timeval currentTime;
 			gettimeofday(&currentTime, NULL);   
 			rawLogFile.Write(wxString::Format("(%010ld.%06ld)",currentTime.tv_sec,currentTime.tv_usec));
@@ -986,7 +1006,7 @@ void TwoCanDevice::LogReceivedFrames(const CanHeader *header, const byte *frame)
 }
 
 // Big switch statement to parse received NMEA 2000 messages
-void TwoCanDevice::ParseMessage(const CanHeader header, const byte *payload) {
+void TwoCanDevice::ParseMessage(const CanHeader header, const byte *payload) {    
 	std::vector<wxString> nmeaSentences;
 	bool result = FALSE;
 
@@ -4264,7 +4284,7 @@ int TwoCanDevice::SendISORequest(const byte destination, const unsigned int pgn)
 	return (writeFrame(id, 3, payload));
 #endif
 	
-#ifdef __LINUX__
+#if defined (__LINUX__)
 	return (linuxSocket->Write(id,3,payload));
 #endif
 }
@@ -4309,7 +4329,7 @@ int TwoCanDevice::SendAddressClaim(const unsigned int sourceAddress) {
 	return (writeFrame(id, CONST_PAYLOAD_LENGTH, &payload[0]));
 #endif
 	
-#ifdef __LINUX__
+#if defined (__LINUX__)
 	return (linuxSocket->Write(id,CONST_PAYLOAD_LENGTH,&payload[0]));
 #endif
 }
@@ -4348,7 +4368,7 @@ int TwoCanDevice::SendHeartbeat() {
 	return (writeFrame(id, CONST_PAYLOAD_LENGTH, &payload[0]));
 #endif
 
-#ifdef __LINUX__
+#if defined (__LINUX__)
 	return (linuxSocket->Write(id, CONST_PAYLOAD_LENGTH, &payload[0]));
 #endif
 
@@ -4480,7 +4500,7 @@ int TwoCanDevice::SendISOResponse(unsigned int sender, unsigned int pgn) {
 	return (writeFrame(id, CONST_PAYLOAD_LENGTH, &payload[0]));
 #endif
 	
-#ifdef __LINUX__
+#if defined (__LINUX__)
 	return (linuxSocket->Write(id,CONST_PAYLOAD_LENGTH,&payload[0]));
 #endif
  
@@ -4524,7 +4544,7 @@ int TwoCanDevice::FragmentFastMessage(CanHeader *header, unsigned int payloadLen
 		returnCode = writeFrame(id, CONST_PAYLOAD_LENGTH, &data[0]);
 #endif
 	
-#ifdef __LINUX__
+#if defined (__LINUX__)
 	returnCode = linuxSocket->Write(id,CONST_PAYLOAD_LENGTH,&data[0]);
 #endif
 
@@ -4550,7 +4570,7 @@ int TwoCanDevice::FragmentFastMessage(CanHeader *header, unsigned int payloadLen
 #endif
 
 		
-#ifdef __LINUX__
+#if defined (__LINUX__)
 		returnCode = linuxSocket->Write(id,CONST_PAYLOAD_LENGTH,&data[0]);
 #endif
 
@@ -4577,7 +4597,7 @@ int TwoCanDevice::FragmentFastMessage(CanHeader *header, unsigned int payloadLen
 #endif
 
 		
-#ifdef __LINUX__
+#if defined (__LINUX__)
 		returnCode = linuxSocket->Write(id,CONST_PAYLOAD_LENGTH,&data[0]);
 #endif
 		if (returnCode != TWOCAN_RESULT_SUCCESS) {

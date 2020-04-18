@@ -27,8 +27,8 @@
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <net/if.h>
-#include <linux/can.h>
-#include <linux/can/raw.h>
+//#include <linux/can.h>
+//#include <linux/can/raw.h>
 
 #include <vector>
 
@@ -80,7 +80,7 @@ protected:
 
 private:
 	// CAN connection variables
-	struct sockaddr_can canAddress;
+	//struct sockaddr_can canAddress;
 	// Interface Request
 	struct ifreq canRequest;
 	// Socket Descriptor

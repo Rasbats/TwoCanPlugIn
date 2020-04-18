@@ -25,7 +25,7 @@
 #include "twocansettingsbase.h"
 
 #include "twocanutils.h"
-#ifdef __LINUX__
+#if defined (__LINUX__)
 #include "twocansocket.h"
 #endif
 
@@ -169,12 +169,12 @@ static std::unordered_map<int, std::string> deviceManufacturers = {
 	{ 2019, "TwoCan" }
 };
 
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
 // For enumerating CAN Adapters
 #include <sys/ioctl.h>
 #include <net/if.h>
-#include <linux/can.h>
-#include <linux/can/raw.h>
+//#include <linux/can.h>
+//#include <linux/can/raw.h>
 #endif
 
 // Globally defined settings which the settings dialog reads and writes to directly
@@ -213,21 +213,24 @@ class TwoCanSettings : public TwoCanSettingsBase
 public:
 	TwoCanSettings(wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Two Can Preferences"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE);
 	~TwoCanSettings() ;
+
+    void OnInit(wxInitDialogEvent& event);
+    void OnChoice(wxCommandEvent &event);
+    void OnCheckPGN(wxCommandEvent &event);
+    void OnLogging(wxCommandEvent &event);
+    void OnCheckMode(wxCommandEvent &event);
+    void OnCheckHeartbeat(wxCommandEvent &event);
+    void OnPause(wxCommandEvent &event);
+    void OnCopy(wxCommandEvent &event);
+    void OnOK(wxCommandEvent &event);
+    void OnApply(wxCommandEvent &event);
+    void OnCancel(wxCommandEvent &event);
+    void OnRightClick(wxMouseEvent& event);
 	
 protected:
 	//overridden methods from the base class
-	void OnInit(wxInitDialogEvent& event);
-	void OnChoice(wxCommandEvent &event);
-	void OnCheckPGN(wxCommandEvent &event);
-	void OnLogging(wxCommandEvent &event);
-	void OnCheckMode(wxCommandEvent &event);
-	void OnCheckHeartbeat(wxCommandEvent &event);
-	void OnPause(wxCommandEvent &event);
-	void OnCopy(wxCommandEvent &event);
-	void OnOK(wxCommandEvent &event);
-	void OnApply(wxCommandEvent &event);
-	void OnCancel(wxCommandEvent &event);
-	void OnRightClick(wxMouseEvent& event);
+	
+	
 
 private:
 	void SaveSettings(void);

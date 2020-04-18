@@ -63,6 +63,7 @@ TwoCanSettings::~TwoCanSettings() {
 }
 
 void TwoCanSettings::OnInit(wxInitDialogEvent& event) {
+    wxMessageBox("OnInit settings pgn");
 	this->settingsDirty = FALSE;
 		
 	// Settings Tab
@@ -106,6 +107,7 @@ void TwoCanSettings::OnInit(wxInitDialogEvent& event) {
 		cmbInterfaces->Append(it->first);
 		// Ensure that the driver being used is selected in the Combobox 
 		if (canAdapter == it->second) {
+            wxMessageBox("in canAdapter");
 			cmbInterfaces->SetStringSelection(it->first);
 		}
 	}
@@ -190,6 +192,7 @@ void TwoCanSettings::OnInit(wxInitDialogEvent& event) {
 	Fit();
 }
 
+
 // BUG BUG Should prevent the user from shooting themselves in the foot if they select a driver that is not present
 void TwoCanSettings::OnChoice(wxCommandEvent &event) {
 	// BUG BUG should only set the dirty flag if we've actually selected a different driver
@@ -265,6 +268,9 @@ void TwoCanSettings::OnOK(wxCommandEvent &event) {
 
 void TwoCanSettings::OnApply(wxCommandEvent &event) {
 	// Save the settings
+    
+    
+    
 	if (this->settingsDirty) {
 		SaveSettings();
 		this->settingsDirty = FALSE;
@@ -393,6 +399,27 @@ bool TwoCanSettings::EnumerateDrivers(void) {
 	}
 	
 #endif
+    
+#if defined (__APPLE__) && defined (__MACH__)
+    //wxMessageBox("wxosx");
+    // Add the built-in Log File Reader to the Adapter hashmap
+    // BUG BUG Should add a #define for this string constant
+    // BUG BUG In future enumerate USB Modem device for Canable Cantact adapter
+    
+    adapters["Log File Reader"] = "Log File Reader";
+    
+    std::vector<wxString> canAdapters;
+    // Enumerate installed CAN adapters
+    canAdapters.push_back(adapters["Log File Reader"]);
+    
+    for (auto it = canAdapters.begin(); it != canAdapters.end(); ++it) {
+        wxLogMessage(_T("TwoCan Settings, Found CAN adapter: %s"),*it);
+        this->adapters[*it] = *it;
+    }
+    
+    
+#endif
+
 
 	return TRUE;
 }

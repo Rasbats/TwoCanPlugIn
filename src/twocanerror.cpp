@@ -26,7 +26,7 @@
 
 #include "twocanerror.h"
 
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
 #include <cerrno>
 #endif
 
@@ -51,7 +51,7 @@ char *GetErrorMessage(int errorCode) {
 	
 #endif
 
-#ifdef __LINUX__
+#if defined (__APPLE__) && defined (__MACH__)
 
 	// Retrieve the Linux system error message for the last-error code
 	
